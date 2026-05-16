@@ -51,3 +51,23 @@ fig.tight_layout()
 fig.savefig("figures/train_actual_vs_pred.png", dpi=150)
 plt.close(fig)
 print("Saved figures/train_actual_vs_pred.png")
+
+
+# Test predictions
+y_test_pred = mlp.predict(X_test)
+
+# Plot: actual vs. predicted on test set
+fig, ax = plt.subplots(figsize=(7, 7))
+ax.scatter(y_test, y_test_pred, alpha=0.3, s=10, color="darkorange")
+lims = [0, 5.5]
+ax.plot(lims, lims, "r--", linewidth=1, label="Perfect prediction")
+ax.set_xlim(lims)
+ax.set_ylim(lims)
+ax.set_xlabel("Actual Median House Value ($100k)")
+ax.set_ylabel("Predicted Median House Value ($100k)")
+ax.set_title("Test Set: Actual vs. Predicted")
+ax.legend()
+fig.tight_layout()
+fig.savefig("figures/test_actual_vs_pred.png", dpi=150)
+plt.close(fig)
+print("Saved figures/test_actual_vs_pred.png")
