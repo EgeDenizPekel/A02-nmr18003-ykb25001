@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 
 # Load dataset
 housing = fetch_california_housing()
@@ -18,21 +21,38 @@ print(f"Test size:  {X_test.shape[0]} samples")
 print(f"Features:   {housing.feature_names}")
 
 
-mlp = MLPRegressor(
+MLP_PARAMS = dict(
     hidden_layer_sizes=(100, 50),
     activation='relu',
     solver='adam',
-    early_stopping=True,          # <-- enables early stopping
-    validation_fraction=0.1,      # 10% of training data used as validation
-    n_iter_no_change=10,          # stop if no improvement for 10 epochs
+    early_stopping=True,
+    validation_fraction=0.1,
+    n_iter_no_change=10,
     max_iter=500,
-    random_state=42
+    random_state=42,
 )
 
-mlp.fit(X_train, y_train)
+# Baseline: unscaled MLP
+mlp_unscaled = MLPRegressor(**MLP_PARAMS)
+mlp_unscaled.fit(X_train, y_train)
+r2_unscaled_train = r2_score(y_train, mlp_unscaled.predict(X_train))
+r2_unscaled_test  = r2_score(y_test,  mlp_unscaled.predict(X_test))
+
+# Scaled pipeline
+pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("mlp", MLPRegressor(**MLP_PARAMS)),
+])
+pipeline.fit(X_train, y_train)
 
 # Train predictions
-y_train_pred = mlp.predict(X_train)
+y_train_pred = pipeline.predict(X_train)
+r2_scaled_train = r2_score(y_train, y_train_pred)
+
+print(f"\nTrain Metrics:")
+print(f"  R²:   {r2_score(y_train, y_train_pred):.4f}")
+print(f"  MAE:  {mean_absolute_error(y_train, y_train_pred):.4f}")
+print(f"  RMSE: {root_mean_squared_error(y_train, y_train_pred):.4f}")
 
 # Plot: actual vs. predicted on training set
 os.makedirs("figures", exist_ok=True)
@@ -54,7 +74,17 @@ print("Saved figures/train_actual_vs_pred.png")
 
 
 # Test predictions
-y_test_pred = mlp.predict(X_test)
+y_test_pred = pipeline.predict(X_test)
+r2_scaled_test = r2_score(y_test, y_test_pred)
+
+print(f"\nTest Metrics:")
+print(f"  R²:   {r2_score(y_test, y_test_pred):.4f}")
+print(f"  MAE:  {mean_absolute_error(y_test, y_test_pred):.4f}")
+print(f"  RMSE: {root_mean_squared_error(y_test, y_test_pred):.4f}")
+
+print(f"\nScaling impact (R²):")
+print(f"  Train: {r2_unscaled_train:.4f} -> {r2_scaled_train:.4f}  ({r2_scaled_train - r2_unscaled_train:+.4f})")
+print(f"  Test:  {r2_unscaled_test:.4f}  -> {r2_scaled_test:.4f}   ({r2_scaled_test - r2_unscaled_test:+.4f})")
 
 # Plot: actual vs. predicted on test set
 fig, ax = plt.subplots(figsize=(7, 7))
